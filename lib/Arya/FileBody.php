@@ -50,7 +50,7 @@ class FileBody implements Body {
     }
 
     /**
-     * @TODO
+     * @TODO Add ETag options
      */
     function setOptions() {}
 

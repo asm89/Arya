@@ -21,14 +21,14 @@ class Application {
     private $errorModifiers = array();
 
     private $normalizeMethodCase = TRUE;
-    private $allowEmptyResponse = FALSE;
+    private $allowEmptyPrimitiveResponse = FALSE;
     private $autoReason = TRUE;
     private $debug = TRUE;
 
     private $uriFilterWildcard = '*';
     private $isManuallyAddingHeadRoute = FALSE;
 
-    function __construct(Injector $injector = NULL, Router $router = NULL) {
+    public function __construct(Injector $injector = NULL, Router $router = NULL) {
         $this->injector = $injector ?: new Provider;
         $this->router = $router ?: new CompositeRegexRouter;
         $self = $this;
@@ -45,7 +45,7 @@ class Application {
      * @param mixed $handler
      * @return AppRouteProxy
      */
-    function route($httpMethod, $uri, $handler) {
+    public function route($httpMethod, $uri, $handler) {
         if ($this->normalizeMethodCase) {
             $httpMethod = strtoupper($httpMethod);
         }
@@ -77,7 +77,7 @@ class Application {
      * @throws TerminationException
      * @return Application Returns the current object instance
      */
-    function onError($handler, $statusCode = '*') {
+    public function onError($handler, $statusCode = '*') {
         if ($statusCode === '*') {
             $this->errorModifiers[$statusCode] = $handler;
         } elseif (($statusCode = @intval($statusCode))
@@ -99,7 +99,7 @@ class Application {
      * @param array $options
      * @return Application Returns the current object instance
      */
-    function before($middleware, array $options = array()) {
+    public function before($middleware, array $options = array()) {
         $this->befores[] = $this->generateMiddlewareComponents($middleware, $options);
 
         return $this;
@@ -120,7 +120,7 @@ class Application {
      * @param array $options
      * @return Application Returns the current object instance
      */
-    function after($middleware, array $options = array()) {
+    public function after($middleware, array $options = array()) {
         $this->afters[] = $this->generateMiddlewareComponents($middleware, $options);
 
         return $this;
@@ -133,7 +133,7 @@ class Application {
      * @param array $options
      * @return Application Returns the current object instance
      */
-    function finalize($middleware, array $options = array()) {
+    public function finalize($middleware, array $options = array()) {
         $this->finalizers[] = $this->generateMiddlewareComponents($middleware, $options);
 
         return $this;
@@ -145,7 +145,7 @@ class Application {
      * @param array $request The request environment
      * @return void
      */
-    function run(Request $request = NULL) {
+    public function run(Request $request = NULL) {
         $request = $request ?: $this->generateRequest();
         $this->request = $request;
         $this->injector->share($request);
@@ -332,9 +332,13 @@ class Application {
 
             if ($result instanceof Response) {
                 $response = $result;
+            } elseif (is_array($result)) {
+                $response = new Response;
+                $response->populateFromAsgiMap($result);
             } else {
                 $response = new Response;
                 $response->setBody($result);
+                $this->validateEmptyPrimitiveResponse($response);
             }
         } catch (NotFoundException $e) {
             $response = $this->generateNotFoundResponse();
@@ -352,6 +356,14 @@ class Application {
         }
 
         return $response;
+    }
+
+    private function validateEmptyPrimitiveResponse(Response $response) {
+        if (!($this->allowEmptyPrimitiveResponse || ($body = $response->getBody()) || $body === '0')) {
+            throw new \LogicException(
+                'Empty primitive response'
+            );
+        }
     }
 
     private function generateNotFoundResponse() {
@@ -419,7 +431,7 @@ class Application {
         }
 
         $protocol = $this->request->getOriginalVar('SERVER_PROTOCOL');
-        $statusLine = $response->generateStatusLine($protocol);
+        $statusLine = $this->generateResponseStatusLine($response, $protocol);
         header($statusLine);
 
         foreach ($response->getAllHeaderLines() as $headerLine) {
@@ -433,6 +445,18 @@ class Application {
         } elseif (is_callable($body)) {
             $this->outputCallableBody($body);
         }
+    }
+
+    private function generateResponseStatusLine(Response $response, $protocol) {
+        $status = $response->getStatus();
+        $reason = $response->getReason();
+        $statusLine = sprintf("HTTP/%f %d", $protocol, $status);
+
+        if (isset($reason[0])) {
+            $statusLine .= " {$reason}";
+        }
+
+        return $statusLine;
     }
 
     private function modifyErrorResponse($statusCode, Response $response) {
