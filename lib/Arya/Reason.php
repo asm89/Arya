@@ -51,4 +51,3 @@ class Reason {
     const HTTP_511 = 'Network Authentication Required';
 
 }
-

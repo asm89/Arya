@@ -38,4 +38,5 @@ class JsonBody implements Body {
             'Content-Length' => strlen($this->json)
         );
     }
+
 }

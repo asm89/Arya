@@ -57,4 +57,5 @@ class FileBody implements Body {
     function getPath() {
         return $this->path;
     }
+
 }

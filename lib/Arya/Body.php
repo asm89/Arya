@@ -5,7 +5,7 @@ namespace Arya;
 interface Body {
 
     /**
-     * Outputs entity body data to STDOUT
+     * Responsible for outputting entity body data to STDOUT
      */
     function __invoke();
 
@@ -13,4 +13,5 @@ interface Body {
      * Return an optional array of headers to be sent prior to entity body output
      */
     function getHeaders();
+
 }
