@@ -28,7 +28,6 @@ class Application {
     private $debug = TRUE;
 
     private $uriFilterWildcard = '*';
-    private $isManuallyAddingHeadRoute = FALSE;
 
     public function __construct(Injector $injector = NULL, Router $router = NULL) {
         $this->injector = $injector ?: new Provider;
@@ -50,17 +49,6 @@ class Application {
     public function route($httpMethod, $uri, $handler) {
         if ($this->normalizeMethodCase) {
             $httpMethod = strtoupper($httpMethod);
-        }
-        if ($httpMethod === 'GET') {
-            $this->isManuallyAddingHeadRoute = TRUE;
-            $this->route('HEAD', $uri, $handler);
-            $this->isManuallyAddingHeadRoute = FALSE;
-        } elseif ($httpMethod === 'HEAD' && !$this->isManuallyAddingHeadRoute) {
-            error_log(
-                "HEAD requests are handled automatically by GET route handlers. " .
-                "Please specify a GET route if you wish to respond to HEAD requests " .
-                "for the {$uri} route."
-            );
         }
 
         $this->router->addRoute($httpMethod, $uri, $handler);
@@ -314,12 +302,11 @@ class Application {
         return $response;
     }
 
-    private function routeRequest(Request $request) {
+    private function routeRequest(Request $request, $forceMethod = NULL) {
         try {
-            list($routeHandler, $routeArgs) = $this->router->route(
-                $request['REQUEST_METHOD'],
-                $request['REQUEST_URI_PATH']
-            );
+            $method = $forceMethod ?: $request['REQUEST_METHOD'];
+            $uriPath = $request['REQUEST_URI_PATH'];
+            list($routeHandler, $routeArgs) = $this->router->route($method, $uriPath);
 
             $request['ROUTE_ARGS'] = $routeArgs;
             $argLiterals = array();
@@ -345,8 +332,12 @@ class Application {
         } catch (NotFoundException $e) {
             $response = $this->generateNotFoundResponse();
         } catch (MethodNotAllowedException $e) {
-            $allowedMethods = $e->getAllowedMethods();
-            $response = $this->generateMethodNotAllowedResponse($allowedMethods);
+            if ($method === 'HEAD') {
+                $response = $this->routeRequest($request, $forceMethod = 'GET');
+            } else {
+                $allowedMethods = $e->getAllowedMethods();
+                $response = $this->generateMethodNotAllowedResponse($allowedMethods);
+            }
         } catch (InjectionException $e) {
             $response = $this->generateExceptionResponse(new \RuntimeException(
                 $msg = 'Route handler injection failure',
