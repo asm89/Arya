@@ -2,7 +2,9 @@
 
 namespace Arya;
 
-use Auryn\Injector,
+use Asgi\Status,
+    Asgi\Reason,
+    Auryn\Injector,
     Auryn\Provider,
     Auryn\InjectionException,
     Arya\Routing\Router,
@@ -425,7 +427,7 @@ class Application {
         }
 
         if ($this->autoReason && !$response->getReason()) {
-            $reasonConstant = "Thing\Reason::HTTP_{$statusCode}";
+            $reasonConstant = "Asgi\Reason::HTTP_{$statusCode}";
             $reason = defined($reasonConstant) ? constant($reasonConstant) : '';
             $response->setReason($reason);
         }
