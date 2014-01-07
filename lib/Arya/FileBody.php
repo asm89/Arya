@@ -7,7 +7,7 @@ class FileBody implements Body {
     private $path;
     private $options = array();
 
-    function __construct($path) {
+    public function __construct($path) {
         if (!is_string($path)) {
             throw new \RuntimeException(
                 sprintf('FileBody path must be a string filesystem path; %s specified', gettype($path))
@@ -25,11 +25,11 @@ class FileBody implements Body {
         }
     }
 
-    function __invoke() {
+    public function __invoke() {
         $this->send();
     }
 
-    function send() {
+    public function send() {
         if (@readfile($this->path) === FALSE) {
             $lastError = error_get_last();
             extract($lastError);
@@ -43,7 +43,7 @@ class FileBody implements Body {
      * @TODO Parse content-type from file extension
      * @TODO Add caching headers
      */
-    function getHeaders() {
+    public function getHeaders() {
         return array(
             'Content-Length' => filesize($this->path)
         );
@@ -52,9 +52,9 @@ class FileBody implements Body {
     /**
      * @TODO Add ETag options
      */
-    function setOptions() {}
+    public function setOptions() {}
 
-    function getPath() {
+    public function getPath() {
         return $this->path;
     }
 

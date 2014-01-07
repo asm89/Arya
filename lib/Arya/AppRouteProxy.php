@@ -8,7 +8,7 @@ class AppRouteProxy {
     private $method;
     private $uri;
 
-    function __construct(Application $app, $method, $uri) {
+    public function __construct(Application $app, $method, $uri) {
         $this->app = $app;
         $this->method = $method;
         $this->uri = $uri;
@@ -21,7 +21,7 @@ class AppRouteProxy {
      * @param int $priority
      * @return AppRouteProxy Returns current object instance
      */
-    function beforeRoute($middleware, $priority = 50) {
+    public function beforeRoute($middleware, $priority = 50) {
         $this->app->before($middleware, $options = array(
             'method' => $this->method,
             'uri' => $this->uri,
@@ -38,7 +38,7 @@ class AppRouteProxy {
      * @param int $priority
      * @return AppRouteProxy Returns current object instance
      */
-    function afterRoute($middleware, $priority = 50) {
+    public function afterRoute($middleware, $priority = 50) {
         $this->app->after($middleware, $options = array(
             'method' => $this->method,
             'uri' => $this->uri,
@@ -55,7 +55,7 @@ class AppRouteProxy {
      * @param int $priority
      * @return AppRouteProxy Returns current object instance
      */
-    function finalizeRoute($middleware, $priority = 50) {
+    public function finalizeRoute($middleware, $priority = 50) {
         $this->app->finalize($middleware, $options = array(
             'method' => $this->method,
             'uri' => $this->uri,
@@ -73,7 +73,7 @@ class AppRouteProxy {
      * @throws \BadMethodCallException
      * @return mixed
      */
-    function __call($method, array $args) {
+    public function __call($method, array $args) {
         $callable = [$this->app, $method];
 
         if (!is_callable($callable)) {

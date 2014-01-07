@@ -6,7 +6,7 @@ use Arya\AppRouteProxy;
 
 class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
 
-    function testMagicCallDelegatesToApplication() {
+    public function testMagicCallDelegatesToApplication() {
         $app = $this->getMock('Arya\Application');
         $app->expects($this->once())->method('execute');
         $arp = new AppRouteProxy($app, 'GET', '/some-uri');
@@ -16,7 +16,7 @@ class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
     /**
      * @expectedException \BadMethodCallException
      */
-    function testMagicCallThrowsOnUnknownApplicationMethod() {
+    public function testMagicCallThrowsOnUnknownApplicationMethod() {
         $app = $this->getMock('Arya\Application');
         $arp = new AppRouteProxy($app, 'GET', '/some-uri');
         $arp->nonexistentMethod();
@@ -25,7 +25,7 @@ class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider provideMiddleware
      */
-    function testBeforeRouteDelegatesToApplicationBeforeMethod($middleware, $method, $uri, $priority) {
+    public function testBeforeRouteDelegatesToApplicationBeforeMethod($middleware, $method, $uri, $priority) {
         $app = $this->getMock('Arya\Application');
         $arp = new AppRouteProxy($app, $method, $uri);
         $app->expects($this->once())
@@ -43,7 +43,7 @@ class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider provideMiddleware
      */
-    function testAfterRouteDelegatesToApplicationAfterMethod($middleware, $method, $uri, $priority) {
+    public function testAfterRouteDelegatesToApplicationAfterMethod($middleware, $method, $uri, $priority) {
         $app = $this->getMock('Arya\Application');
         $arp = new AppRouteProxy($app, $method, $uri);
         $app->expects($this->once())
@@ -61,7 +61,7 @@ class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
     /**
      * @dataProvider provideMiddleware
      */
-    function testFinalizeRouteDelegatesToApplicationFinalizeMethod($middleware, $method, $uri, $priority) {
+    public function testFinalizeRouteDelegatesToApplicationFinalizeMethod($middleware, $method, $uri, $priority) {
         $app = $this->getMock('Arya\Application');
         $arp = new AppRouteProxy($app, $method, $uri);
         $app->expects($this->once())
@@ -76,7 +76,7 @@ class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
         $this->assertInstanceOf('Arya\AppRouteProxy', $returnValue);
     }
 
-    function provideMiddleware() {
+    public function provideMiddleware() {
         $return = array();
 
         // 0 -------------------------------------------------------------------------------------->

@@ -6,12 +6,12 @@ class ChunkedFileBody extends FileBody {
 
     private $chunkSize;
 
-    function __construct($path, $chunkSize = 8192) {
+    public function __construct($path, $chunkSize = 8192) {
         parent::__construct($path);
         $this->chunkSize = @intval($chunkSize) ?: 8192;
     }
 
-    function send() {
+    public function send() {
         $path = $this->getPath();
         if (!$fh = @fopen($path, 'r')) {
             throw new \RuntimeException(

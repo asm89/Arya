@@ -10,13 +10,13 @@ interface Router {
      * @param mixed $handler
      * @return void
      */
-    function addRoute($httpMethod, $route, $handler);
+    public function addRoute($httpMethod, $route, $handler);
 
     /**
      * @param string $httpMethod
      * @param string $uri
      * @return mixed
      */
-    function route($httpMethod, $uri);
+    public function route($httpMethod, $uri);
 
 }

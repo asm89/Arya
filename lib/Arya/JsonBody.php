@@ -6,7 +6,7 @@ class JsonBody implements Body {
 
     private $json;
 
-    function __construct($data, $flags = 0, $depth = 512) {
+    public function __construct($data, $flags = 0, $depth = 512) {
         if (!$this->json = @json_encode($data, $flags, $depth)) {
             $errorCode = json_last_error();
             $errorMsg = function_exists('json_last_error_msg')
@@ -28,11 +28,11 @@ class JsonBody implements Body {
         return isset($errors[$errorCode]) ? $errors[$errorCode] : "Unknown error ({$errorCode})";
     }
 
-    function __invoke() {
+    public function __invoke() {
         echo $this->json;
     }
 
-    function getHeaders() {
+    public function getHeaders() {
         return array(
             'Content-Type' => 'application/json; charset=utf-8',
             'Content-Length' => strlen($this->json)

@@ -24,7 +24,7 @@ class CompositeRegexRouter implements Router {
      * @throws \InvalidArgumentException
      * @return void
      */
-    function addRoute($httpMethod, $route, $handler) {
+    public function addRoute($httpMethod, $route, $handler) {
         $route = '/' . ltrim($route, '/');
         if ($this->containsVariable($route)) {
             $this->addVariableRoute($httpMethod, $route, $handler);
@@ -42,7 +42,7 @@ class CompositeRegexRouter implements Router {
      * @throws MethodNotAllowedException
      * @return array
      */
-    function route($httpMethod, $uri) {
+    public function route($httpMethod, $uri) {
         if (isset($this->staticRoutes[$uri][$httpMethod])) {
             return [$this->staticRoutes[$uri][$httpMethod], []];
         } elseif ($this->compositeRegex) {
