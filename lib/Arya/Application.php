@@ -450,7 +450,7 @@ class Application {
     private function generateResponseStatusLine(Response $response, $protocol) {
         $status = $response->getStatus();
         $reason = $response->getReason();
-        $statusLine = sprintf("HTTP/%f %d", $protocol, $status);
+        $statusLine = "HTTP/{$protocol} {$status}";
 
         if (isset($reason[0])) {
             $statusLine .= " {$reason}";
