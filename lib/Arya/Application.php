@@ -423,7 +423,7 @@ class Application {
             $response->setReason($reason);
         }
 
-        $protocol = $this->request->getOriginalVar('SERVER_PROTOCOL');
+        $protocol = $this->request->getOriginal('SERVER_PROTOCOL');
         $statusLine = $this->generateResponseStatusLine($response, $protocol);
         header($statusLine);
 
@@ -501,7 +501,7 @@ class Application {
     private function outputManualExceptionResponse(\Exception $e) {
         if (!headers_sent()) {
             header_remove();
-            $protocol = $this->request->getOriginalVar('SERVER_PROTOCOL');
+            $protocol = $this->request->getOriginal('SERVER_PROTOCOL');
             header("HTTP/{$protocol} 500 Internal Server Error");
             echo $this->generateExceptionBody($e);
         }
