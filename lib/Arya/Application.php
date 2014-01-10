@@ -8,7 +8,8 @@ use Asgi\Status,
     Auryn\Provider,
     Auryn\InjectionException,
     Arya\Routing\Router,
-    Arya\Routing\CompositeRegexRouter;
+    Arya\Routing\CompositeRegexRouter,
+    Arya\Sessions\Session;
 
 class Application {
 
@@ -16,22 +17,42 @@ class Application {
     private $router;
     private $request;
     private $response;
+    private $session;
 
     private $befores = array();
     private $afters = array();
     private $finalizers = array();
     private $errorModifiers = array();
 
-    private $normalizeMethodCase = TRUE;
-    private $allowEmptyPrimitiveResponse = FALSE;
-    private $autoReason = TRUE;
-    private $debug = TRUE;
-
-    private $uriFilterWildcard = '*';
+    private $options = array(
+        'app.debug' => TRUE,
+        'app.auto_reason' => TRUE,
+        'app.normalize_method_case' => TRUE,
+        'app.allow_empty_response' => FALSE,
+        'session.class' => 'Arya\Sessions\FileSessionHandler',
+        'session.strict' => TRUE,
+        'session.cookie_name' => 'ARYASESSID',
+        'session.cookie_domain' => '',
+        'session.cookie_path' => '',
+        'session.cookie_secure' => FALSE,
+        'session.cookie_httponly' => TRUE,
+        'session.check_referer' => '',
+        'session.entropy_length' => 1024,
+        'session.entropy_file' => NULL,
+        'session.hash_function' => NULL,
+        'session.cache_limiter' => Session::CACHE_NOCACHE,
+        'session.cache_expire' => 180,
+        'session.gc_probability' => 1,
+        'session.gc_divisor' => 100,
+        'session.gc_max_lifetime' => -100,
+        'session.middleware_priority' => 20,
+        'session.save_path' => NULL
+    );
 
     public function __construct(Injector $injector = NULL, Router $router = NULL) {
         $this->injector = $injector ?: new Provider;
         $this->router = $router ?: new CompositeRegexRouter;
+
         $self = $this;
         register_shutdown_function(function() use ($self) { $self->shutdownHandler(); });
         set_exception_handler(function($e) use ($self) { $self->exceptionHandler($e); });
@@ -47,7 +68,7 @@ class Application {
      * @return AppRouteProxy
      */
     public function route($httpMethod, $uri, $handler) {
-        if ($this->normalizeMethodCase) {
+        if ($this->options['app.normalize_method_case']) {
             $httpMethod = strtoupper($httpMethod);
         }
 
@@ -137,13 +158,31 @@ class Application {
      */
     public function run(Request $request = NULL) {
         $request = $request ?: $this->generateRequest();
+
         $this->request = $request;
         $this->injector->share($request);
-        $this->sortMiddlewareByPriority();
+        $this->injector->share('Arya\Sessions\SessionMiddlewareProxy');
+        $this->injector->alias('Arya\Sessions\Session', 'Arya\Sessions\SessionMiddlewareProxy');
+        $this->injector->define('Arya\Sessions\SessionMiddlewareProxy', array(
+            ':app' => $this,
+            ':request' => $request,
+            ':priority' => $this->options['session.middleware_priority'],
+            'handler' => $this->options['session.class']
+        ));
+
+        $middlewareSort = [$this, 'middlewareSort'];
+        usort($this->befores, $middlewareSort);
 
         if (!$response = $this->doBefores($request)) {
             $response = $this->routeRequest($request);
         }
+
+        // We specifically sort these after handler invocation so that session middleware
+        // added during session instantiation can be dynamically prioritized. This isn't
+        // strictly necessary but if we sorted these before the request it wouldn't be possible
+        // to let users change session middleware priority.
+        usort($this->afters, $middlewareSort);
+        usort($this->finalizers, $middlewareSort);
 
         $this->response = $this->doAfters($request, $response);
 
@@ -161,20 +200,6 @@ class Application {
         $request = new Request($_SERVER, $_GET, $_POST, $_FILES, $_COOKIE, $input);
 
         return $request;
-    }
-
-    private function sortMiddlewareByPriority() {
-        $sortFunction = [$this, 'middlewareSort'];
-
-        if ($this->befores) {
-            usort($this->befores, $sortFunction);
-        }
-        if ($this->afters) {
-            usort($this->afters, $sortFunction);
-        }
-        if ($this->finalizers) {
-            usort($this->finalizers, $sortFunction);
-        }
     }
 
     private function middlewareSort(array $a, array $b) {
@@ -258,7 +283,7 @@ class Application {
     private function matchesUriFilter($uriFilter, $uriPath) {
         if ($uriFilter === $uriPath) {
             $isMatch = TRUE;
-        } elseif ($uriFilter[strlen($uriFilter) - 1] === $this->uriFilterWildcard
+        } elseif ($uriFilter[strlen($uriFilter) - 1] === '*'
             && strpos($uriPath, substr($uriFilter, 0, -1)) === 0
         ) {
             $isMatch = TRUE;
@@ -279,7 +304,7 @@ class Application {
     }
 
     private function generateExceptionBody(\Exception $e) {
-        $msg = $this->debug
+        $msg = $this->options['app.debug']
             ? "<pre style=\"color:red\">{$e}</pre>"
             : '<p>Something went terribly wrong!</p>';
 
@@ -291,7 +316,7 @@ class Application {
         $response->setStatus(Status::INTERNAL_SERVER_ERROR);
         $response->setReason(Reason::HTTP_500);
 
-        $msg = $this->debug
+        $msg = $this->options['app.debug']
             ? "<pre style=\"color:red\">{$buffer}</pre>"
             : '<p>Something went terribly wrong!</p>';
 
@@ -352,7 +377,7 @@ class Application {
     }
 
     private function validateEmptyPrimitiveResponse(Response $response) {
-        if (!($this->allowEmptyPrimitiveResponse || ($body = $response->getBody()) || $body === '0')) {
+        if (!($this->options['app.allow_empty_response'] || ($body = $response->getBody()) || $body === '0')) {
             throw new \LogicException(
                 'Empty primitive response'
             );
@@ -394,7 +419,7 @@ class Application {
 
         if ($methodFilter && $request['REQUEST_METHOD'] !== $methodFilter) {
             $result = NULL;
-        } elseif ($uriFilter && !$this->matchesUriFilter($uriFilter, $request['REQUEST_URI'])) {
+        } elseif ($uriFilter && !$this->matchesUriFilter($uriFilter, $request['REQUEST_URI_PATH'])) {
             $result = NULL;
         } else {
             $result = $this->tryAfter($middleware, $request, $response);
@@ -405,7 +430,10 @@ class Application {
 
     private function tryAfter($middleware, Request $request, Response $response) {
         try {
-            $this->injector->execute($middleware, [$request, $response]);
+            $this->injector->execute($middleware, array(
+                ':request' => $request,
+                ':response' => $response
+            ));
         } catch (\Exception $e) {
             return $this->generateExceptionResponse($e);
         }
@@ -417,7 +445,7 @@ class Application {
             $response = $this->modifyErrorResponse($statusCode, $response);
         }
 
-        if ($this->autoReason && !$response->getReason()) {
+        if ($this->options['app.auto_reason'] && !$response->getReason()) {
             $reasonConstant = "Asgi\Reason::HTTP_{$statusCode}";
             $reason = defined($reasonConstant) ? constant($reasonConstant) : '';
             $response->setReason($reason);
@@ -425,6 +453,7 @@ class Application {
 
         $protocol = $this->request->getOriginal('SERVER_PROTOCOL');
         $statusLine = $this->generateResponseStatusLine($response, $protocol);
+        header_remove();
         header($statusLine);
 
         foreach ($response->getAllHeaderLines() as $headerLine) {
@@ -513,7 +542,7 @@ class Application {
         $fatals = array(E_ERROR, E_PARSE, E_USER_ERROR, E_CORE_ERROR, E_CORE_WARNING, E_COMPILE_ERROR, E_COMPILE_WARNING);
         $lastError = error_get_last();
 
-        if ($lastError && in_array($lastError['type'], $this->fatals)) {
+        if ($lastError && in_array($lastError['type'], $fatals)) {
             extract($lastError);
             $this->outputManualExceptionResponse(new \RuntimeException(
                 sprintf("Fatal error: %s in %s on line %d", $message, $file, $line)
@@ -538,6 +567,103 @@ class Application {
             exit;
         } else {
             throw $e;
+        }
+    }
+
+    /**
+     * Retrieve an application option setting
+     *
+     * @param string $option
+     * @throws \DomainException
+     * @return mixed
+     */
+    public function getOption($option) {
+        if (isset($this->options[$option])) {
+            return $this->options[$option];
+        } else {
+            throw new \DomainException(
+                sprintf('Unknown option: %s', $option)
+            );
+        }
+    }
+
+    /**
+     * Set multiple application options
+     *
+     * @param array $options
+     * @throws \DomainException
+     * @return Application Returns the current object instance
+     */
+    public function setAllOptions(array $options) {
+        foreach ($options as $option => $value) {
+            $this->setOption($option, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set an application option
+     *
+     * @param string $option
+     * @param mixed $value
+     * @throws \DomainException
+     * @return Application Returns the current object instance
+     */
+    public function setOption($option, $value) {
+        if (isset($this->options[$option])) {
+            $this->assignOptionValue($option, $value);
+        } else {
+            throw new \DomainException(
+                sprintf('Unknown option: %s', $option)
+            );
+        }
+
+        return $this;
+    }
+
+    private function assignOptionValue($option, $value) {
+        switch ($option) {
+            case 'session.class':
+                $this->setSessionClass($value);
+                break;
+            case 'session.save_path':
+                $this->setSessionSavePath($value);
+                break;
+            default:
+                $this->options[$option] = $value;
+        }
+    }
+
+    private function setSessionClass($value) {
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException(
+                'session.class must be a string'
+            );
+        } elseif (!class_exists($value)) {
+            throw new \LogicException(
+                sprintf('session.class does not exist and could not be autoloaded: %s', $value)
+            );
+        } else {
+            $this->options['session.class'] = $value;
+            $this->injector->alias('Arya\Sessions\SessionHandler', $value);
+        }
+    }
+
+    private function setSessionSavePath($value) {
+        if (!is_string($value)) {
+            throw new \InvalidArgumentException(
+                sprintf('session.class requires a string; %s provided', gettype($value))
+            );
+        } elseif (!(is_dir($value) && is_writable($value))) {
+            throw new \InvalidArgumentException(
+                sprintf('session.save_path requires a writable directory path: %s', $value)
+            );
+        } else {
+            $this->options['session.save_path'] = $value;
+            $this->injector->define('Arya\Sessions\FileSessionHandler', array(
+                ':dir' => $value
+            ));
         }
     }
 
