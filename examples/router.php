@@ -20,7 +20,7 @@ $vars = function(Request $request) {
 };
 
 class MyClass {
-    function staticMethod(Request $request) {
+    public static function staticMethod(Request $request) {
         $msg = 'Hello from MyClass::staticMethod()';
         $body = sprintf("<html><body><h1>%s</h1</body></html>", $msg);
         return new Response($body, $status = 200);
@@ -29,10 +29,10 @@ class MyClass {
 
 class CtorDependencies {
     private $request;
-    function __construct(Request $request) {
+    public function __construct(Request $request) {
         $this->request = $request;
     }
-    function myInstanceMethod() {
+    public function myInstanceMethod() {
         $headline = "Hello from CtorDependencies::someMethod()";
         $subheading = "Composed Request Vars";
 
@@ -85,6 +85,16 @@ function output() {
     return "You won't see this because the output will generate a 500 error";
 }
 
+function session(Session $session) {
+    if (empty($session['test'])) {
+        $session['test'] = 0;
+    }
+
+    $session['test'] += 1;
+
+    return sprintf("<html><body><h1>\$session['test']: %d</h1></body></html>", $session['test']);
+}
+
 $app = (new Application)
     ->route('GET', '/', 'helloFunction')
     ->route('GET', '/lambda', $lambda)
@@ -94,5 +104,6 @@ $app = (new Application)
     ->route('GET', '/$arg1', 'argFunction')
     ->route('GET', '/$#arg1/$#arg2', 'numericArgsFunction')
     ->route('GET', '/output', 'output')
+    ->route('GET', '/session', 'session')
     ->run()
 ;
