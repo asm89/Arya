@@ -8,6 +8,8 @@ use Arya\Status,
     Auryn\Provider,
     Auryn\InjectionException,
     Arya\Routing\Router,
+    Arya\Routing\NotFoundException,
+    Arya\Routing\MethodNotAllowedException,
     Arya\Routing\CompositeRegexRouter,
     Arya\Sessions\Session;
 
