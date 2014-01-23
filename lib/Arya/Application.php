@@ -297,7 +297,7 @@ class Application {
     private function generateExceptionResponse(\Exception $e) {
         $response = new Response;
         $response->setStatus(Status::INTERNAL_SERVER_ERROR);
-        $response->setReason(Reason::HTTP_500);
+        $response->setReasonPhrase(Reason::HTTP_500);
         $response->setBody($this->generateExceptionBody($e));
 
         return $response;
@@ -314,7 +314,7 @@ class Application {
     private function generateOutputErrorResponse($buffer) {
         $response = new Response;
         $response->setStatus(Status::INTERNAL_SERVER_ERROR);
-        $response->setReason(Reason::HTTP_500);
+        $response->setReasonPhrase(Reason::HTTP_500);
 
         $msg = $this->options['app.debug']
             ? "<pre style=\"color:red\">{$buffer}</pre>"
@@ -387,7 +387,7 @@ class Application {
     private function generateNotFoundResponse() {
         $response = new Response;
         $response->setStatus(Status::NOT_FOUND);
-        $response->setReason(Reason::HTTP_404);
+        $response->setReasonPhrase(Reason::HTTP_404);
         $response->setBody('<html><body><h1>404 Not Found</h1></body></html>');
 
         return $response;
@@ -396,7 +396,7 @@ class Application {
     private function generateMethodNotAllowedResponse(array $allowedMethods) {
         $response = new Response;
         $response->setStatus(Status::METHOD_NOT_ALLOWED);
-        $response->setReason(Reason::HTTP_405);
+        $response->setReasonPhrase(Reason::HTTP_405);
         $response->setHeader('Allow', implode(',', $allowedMethods));
         $response->setBody('<html><body><h1>405 Method Not Allowed</h1></body></html>');
 
@@ -445,14 +445,21 @@ class Application {
             $response = $this->modifyErrorResponse($statusCode, $response);
         }
 
-        if ($this->options['app.auto_reason'] && !$response->getReason()) {
-            $reasonConstant = "Asgi\Reason::HTTP_{$statusCode}";
-            $reason = defined($reasonConstant) ? constant($reasonConstant) : '';
-            $response->setReason($reason);
+        if ($nativeHeaders = headers_list()) {
+            foreach ($nativeHeaders as $line) {
+                $response->addHeaderLine($line);
+            }
         }
 
-        $protocol = $this->request->getOriginal('SERVER_PROTOCOL');
+        if ($this->options['app.auto_reason'] && !$response->getReasonPhrase()) {
+            $reasonConstant = "Asgi\Reason::HTTP_{$statusCode}";
+            $reason = defined($reasonConstant) ? constant($reasonConstant) : '';
+            $response->setReasonPhrase($reason);
+        }
+
+        $protocol = $this->request['SERVER_PROTOCOL'];
         $statusLine = $this->generateResponseStatusLine($response, $protocol);
+
         header_remove();
         header($statusLine);
 
@@ -471,7 +478,7 @@ class Application {
 
     private function generateResponseStatusLine(Response $response, $protocol) {
         $status = $response->getStatus();
-        $reason = $response->getReason();
+        $reason = $response->getReasonPhrase();
         $statusLine = "HTTP/{$protocol} {$status}";
 
         if (isset($reason[0])) {
@@ -530,7 +537,7 @@ class Application {
     private function outputManualExceptionResponse(\Exception $e) {
         if (!headers_sent()) {
             header_remove();
-            $protocol = $this->request->getOriginal('SERVER_PROTOCOL');
+            $protocol = $this->request['SERVER_PROTOCOL'];
             header("HTTP/{$protocol} 500 Internal Server Error");
             echo $this->generateExceptionBody($e);
         }

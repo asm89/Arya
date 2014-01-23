@@ -12,8 +12,8 @@ class SessionMiddlewareProxy extends Session {
 
         $middlewareOptions = array(
             'priority' => $priority,
-            'uri' => $request->getUri(),
-            'method' => $request->getMethod()
+            'uri' => $request['REQUEST_URI'],
+            'method' => $request['REQUEST_METHOD']
         );
         $self = $this;
         $app->after(function($request, $response) use ($self) {
