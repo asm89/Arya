@@ -24,7 +24,6 @@ class Application {
     private $befores = array();
     private $afters = array();
     private $finalizers = array();
-    private $errorModifiers = array();
 
     private $options = array(
         'app.debug' => TRUE,
@@ -77,32 +76,6 @@ class Application {
         $this->router->addRoute($httpMethod, $uri, $handler);
 
         return new AppRouteProxy($this, $httpMethod, $uri);
-    }
-
-    /**
-     * Register custom error response handlers
-     *
-     * If no $statusCode is specified the handler will be used for all error codes. Handlers
-     * registered for specific codes take precedence over wildcard handlers.
-     *
-     * @param mixed $handler
-     * @param mixed $statusCode
-     * @throws TerminationException
-     * @return Application Returns the current object instance
-     */
-    public function onError($handler, $statusCode = '*') {
-        if ($statusCode === '*') {
-            $this->errorModifiers[$statusCode] = $handler;
-        } elseif (($statusCode = @intval($statusCode))
-            && $statusCode >= 400
-            && $statusCode <= 599
-        ) {
-            $this->errorModifiers[$statusCode] = $handler;
-        } else {
-            $this->outputManualExceptionResponse(new \DomainException(
-                sprintf('Invalid onError status code: %s', $statusCode)
-            ));
-        }
     }
 
     /**
@@ -443,9 +416,6 @@ class Application {
 
     private function sendResponse(Response $response) {
         $statusCode = $response->getStatus();
-        if ($statusCode >= 400) {
-            $response = $this->modifyErrorResponse($statusCode, $response);
-        }
 
         if ($nativeHeaders = headers_list()) {
             foreach ($nativeHeaders as $line) {
@@ -488,18 +458,6 @@ class Application {
         }
 
         return $statusLine;
-    }
-
-    private function modifyErrorResponse($statusCode, Response $response) {
-        if (isset($this->errorModifiers[$statusCode])) {
-            $modifier = $this->errorModifiers[$statusCode];
-            $response = $this->tryErrorModification($modifier, $this->request, $response);
-        } elseif (isset($this->errorModifiers['*'])) {
-            $modifier = $this->errorModifiers['*'];
-            $response = $this->tryErrorModification($modifier, $this->request, $response);
-        }
-
-        return $response;
     }
 
     private function tryErrorModification($modifier, Request $request, Response $response) {
