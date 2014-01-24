@@ -2,11 +2,11 @@
 
 namespace Arya;
 
-use Arya\Status,
-    Arya\Reason,
-    Auryn\Injector,
+use Auryn\Injector,
     Auryn\Provider,
     Auryn\InjectionException,
+    Arya\Status,
+    Arya\Reason,
     Arya\Routing\Router,
     Arya\Routing\NotFoundException,
     Arya\Routing\MethodNotAllowedException,
@@ -237,7 +237,9 @@ class Application {
 
     private function tryBefore($middleware, Request $request) {
         try {
-            $result = $this->injector->execute($middleware);
+            $result = $this->injector->execute($middleware, array(
+                ':request' => $request
+            ));
         } catch (InjectionException $e) {
             $result = $this->generateExceptionResponse(new \RuntimeException(
                 $msg = '"Before" middleware injection failure',
@@ -309,7 +311,9 @@ class Application {
             list($routeHandler, $routeArgs) = $this->router->route($method, $uriPath);
 
             $request['ROUTE_ARGS'] = $routeArgs;
-            $argLiterals = array();
+            $argLiterals = array(
+                ':request' => $request
+            );
 
             if ($routeArgs) {
                 foreach ($routeArgs as $key => $value) {
