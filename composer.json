@@ -1,0 +1,24 @@
+{
+  "name": "rdlowrey/amp",
+  "homepage": "https://github.com/rdlowrey/Arya",
+  "description": "A microframework for PHP 5.3+",
+  "keywords": ["microframework", "routing", "dependency-injection"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Daniel Lowrey",
+      "email": "rdlowrey@gmail.com",
+      "role": "Creator / Lead Developer"
+    }
+  ],
+  "require": {
+    "php": ">=5.4.0",
+    "rdlowrey/auryn: "~0.12.0"
+    "rdlowrey/artax: "~0.6.2"
+  },
+  "autoload": {
+    "psr-0": {
+      "Arya": "lib/"
+    }
+  }
+}
