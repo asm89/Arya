@@ -7,10 +7,25 @@ maximize flexibility while maintaining the simplicity and performance.
 > **WARNING:** Arya is still under development and there is very little unit-testing present at
 > the moment. Use at your own risk.
 
+**Basic Example**
+
+```php
+<?php
+$app = (new Arya\Application)
+    ->route('GET', '/', 'anyFunction')
+    ->route('GET', '/lambda', $anyClosure)
+    ->route('GET', '/static', 'AnyClass::staticMethod')
+    ->route('GET', '/instance', 'AnyClass::instanceMethod') // <-- auto dependency injection
+    ->route('GET', '/args/$#arg1/$#arg2', 'numericArgsFunction')
+    ->run()
+;
+```
+
+
 **Project Goals**
 
-- Model code as closely as possible on the HTTP/1.1 protocol as outlined in RFC 2616;
-- Build components using SOLID, readable and tested code;
+- Model code closely to the HTTP/1.1 protocol as outlined in RFC 2616;
+- Build components using SOLID, readable and well-tested code;
 - Prevent vendor lock-in and static coupling;
 - Minimize performance overhead.
 
@@ -282,7 +297,9 @@ When your application needs fine-grained control over the HTTP response a simple
 In these cases route targets may return an instance of the `Arya\Response` class.
 
 @TODO Talk about status code
+
 @TODO Talk about headers
+
 @TODO Talk about entity body
 
 ### Callable Response Bodies
@@ -321,7 +338,7 @@ With Apache 2.2.16 or higher, you can use the FallbackResource directive in your
 file (.htaccess/httpd.conf/vhost.conf):
 
 ```
-FallbackResource /index.php
+FallbackResource /front_controller.php
 ```
 
 If you have an older version of Apache you should instead add this block to your config file:
@@ -331,9 +348,9 @@ If you have an older version of Apache you should instead add this block to your
     Options -MultiViews
 
     RewriteEngine On
-    #RewriteBase /path/to/app
+    RewriteBase /path/to/app
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [QSA,L]
+    RewriteRule ^ front_controller.php [QSA,L]
 </IfModule>
 ```
 
@@ -344,18 +361,7 @@ If you have an older version of Apache you should instead add this block to your
 
 As of PHP 5.4 you can use the built-in development server to quickly run your application:
 
-```php
-<?php // router.php
-
-// Return FALSE if the request is for a static file
-$filename = __DIR__.preg_replace('#(\?.*)$#', '', $_SERVER['REQUEST_URI']);
-if (php_sapi_name() === 'cli-server' && is_file($filename)) {
-    return FALSE;
-}
-
-$app = (new Application)->route('GET', '/', function() { return 'Hello, world!'; })->run();
-```
 
 ```bash
-$ php -S localhost:8080 router.php
+$ php -S localhost:8080 front_controller.php
 ```
