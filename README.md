@@ -32,14 +32,14 @@ lazy-loading and automated dependency injection to service individual HTTP reque
 
 - PHP >= 5.3
 - [Auryn](https://github.com/rdlowrey/Auryn) (Dependency Injection)
+- [Artax](https://github.com/rdlowrey/Artax) (Only needed to run the full test suite [requires PHP 5.4+])
 
 ## Installation
 
 **Github**
 
 You can clone the latest Arya iteration at anytime from the github repository. By using the
-`--recursive` option git will automatically retrieve the Auryn submodule dependency and store it in
-the vendor directory.
+`--recursive` option git will automatically retrieve the Auryn and Artax submodules for us.
 
 ```bash
 $ git clone --recursive git://github.com/rdlowrey/Arya.git

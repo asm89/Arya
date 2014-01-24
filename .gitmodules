@@ -1,3 +1,6 @@
 [submodule "vendor/Auryn"]
 	path = vendor/Auryn
 	url = git@github.com:rdlowrey/Auryn.git
+[submodule "vendor/Artax"]
+	path = vendor/Artax
+	url = https://github.com/rdlowrey/Artax.git
