@@ -91,7 +91,7 @@ function session(Session $session) {
     return sprintf("<html><body><h1>\$session['test']: %d</h1></body></html>", $session['test']);
 }
 
-function phpinfo() {
+function php_info() {
     $info = ob_start();
     phpinfo();
     return ob_get_clean();
@@ -103,7 +103,7 @@ $app = (new Application)
     ->route('GET', '/static-method', 'StaticExampleClass::staticMethod')
     ->route('GET', '/ctor-deps', 'CtorDependencies::myInstanceMethod')
     ->route('GET', '/complex-response', 'complexResponse')
-    ->route('GET', '/phpinfo', 'phpinfo')
+    ->route('GET', '/phpinfo', 'php_info')
     ->route('GET', '/$arg1', 'argFunction')
     ->route('GET', '/$#arg1/$#arg2', 'numericArgsFunction')
     ->route('GET', '/output', 'output')
