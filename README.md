@@ -113,41 +113,21 @@ $app = (new Arya\Application)
     ->route('GET', '/', 'myFunctionName')
     ->route('GET', '/lambda-hello', function() { return 'Hello world'; })
     ->route('POST', '/static-method', 'MyClass::myStaticPostHandler')
-    ->route('GET', '/array-callback', array($someObject, 'someMethod'))
+    ->route('GET', '/array-callback', [$myObject, 'someMethod'])
+    ->route('GET', '/instance-method', 'MyController::get') // <-- IMPORTANT
     ->run()
 ;
 ```
 
-### Route Execution Paths
-
-Every client request follows one of three paths through the routing system:
-
-1. No request URI match is found: `404 Not Found`
-2. A request URI is matched, but the HTTP verb does not match: `405 Method Not Allowed`
-3. The request URI and HTTP method match a route and the associated target is invoked
-
-> **NOTE:** HTTP method verbs are *case-sensitive* as defined in RFC 2616. Arya automatically
-> normalizes method names specified at Argument 1 of `Application::route` to all-caps to avoid
-> errors. This behavior may be optionally disabled should you wish to handle custom HTTP methods
-> containing lower-case characters.
-
 ### Extended Route Targets
 
-Thankfully, we aren't limited to standard callables in our route targes. Arya will also recursive
-instantiate and provision classes subject to injection definitions you specify. This behavior makes
-it possible to use the `ClassName::methodName` construction as a route target to benefit from
-dependency injection without introducing anti-patterns like Service Locator or tightly coupling your
-controllers to arbitrary framework implementations.
+You'll notice that in the above example code there's special attention paid to the final route,
+`SomeClass::someMethod`. We differentiate this route because it doesn't reference a static method.
+How is this possible? Well ...
 
-The biggest benefit from automatic controller provisioning is lazy-loading. By specifying
-class-based controllers we can avoid loading our full application and autoload only the libraries
-needed to handle the exact request. This is a much more sensible approach than loading an endless
-list of closures or functions we won't ever need on each and every page load.
-
-Arya's built-in dependency injection facility is discussed at length in the
-[Dependency Injection](#dependency-injection) section but for now let's consider the following
-simple example in which our `MyClass` route target is automatically instantiated and invoked for
-requests to the `/` index resource:
+Arya recursively instantiates and provisions classes for you using the include `Auryn` dependency
+injection library. Consider the following simple example in which our `MyController` class is
+automatically instantiated and invoked for requests to the `/` index resource:
 
 ```php
 <?php
@@ -156,7 +136,7 @@ class Templater {
         return "<html><body><p>Hello from {$uri}!</p></body></html>";
     }
 }
-class MyClass {
+class MyController {
     private $templater;
     function __construct(Templater $tpl) {
         $this->templater = $tpl;
@@ -174,13 +154,59 @@ $app = (new Arya\Application)->route('GET', '/', 'MyClass::get')->run();
 > object that renders our HTML response. However, we could have alternatively typehinted the
 > `Templater` in our `MyClass::get` method signature and injected it there.
 
+### Route Execution Paths
+
+Every client request follows one of three paths through the routing system:
+
+1. No request URI match is found: `404 Not Found`
+2. A request URI is matched, but the HTTP verb does not match: `405 Method Not Allowed`
+3. The request URI and HTTP method match a route and the associated target is invoked
+
+> **NOTE:** HTTP method verbs are *case-sensitive* as defined in RFC 2616. Arya automatically
+> normalizes method names specified at Argument 1 of `Application::route` to uppercase to avoid
+> errors. This behavior may be optionally disabled should you wish to handle custom HTTP methods
+> containing lower-case characters.
+
 ### Route Arguments
 
-@TODO Discuss route argument syntax
-@TODO Discuss how args are always stored by name in `$request['ROUTE_ARGS']`
-@TODO Discuss how args are also injected into the route target method signature if named params
-      matching the argument names exist.
+Arya uses a very simple routing syntax to maximize performance. More advanced data validations have
+no business in the routing layer and can easily be performed inside your route targets (where they
+belong). Any route segment beginning with a `$` character is treated as a URI variable and passed
+to the matched target callable:
 
+```
+/lol-cats/$catType/$#catId  // $catType: [^/]+ and $catId: [\d]+
+/widgets/$#widgetId         // $widgetId: [^/]+
+/kumqats/$#kumqatId         // $kumqatId: [^/]+
+```
+
+When URI arguments are matched they are available to route targets in two different ways:
+
+1. As associative array keys in the `$request['ROUTE_ARGS']` array
+2. As paramaters with matching names in the route target's method/function signature
+
+So, let's consider a match for our `/lol-cats` route from above:
+
+```php
+<?php
+
+use Arya\Application;
+
+function lolcatsFunction($request, $catType, $catId) {
+    assert($catType === $request['ROUTE_ARGS']['catType']);
+    assert($catId === $request['ROUTE_ARGS']['catId']);
+    
+    return '<html><body>woot!</body></html>';
+}
+
+$app = (new Application)
+    ->route('GET', '/lol-cats/$catType/$#catId', 'lolcatsFunction')
+    ->run();
+```
+
+The takeway here is that you can accept your URI route arguments as parameters with matching names
+in your route target signature if you like but they'll always be available in the
+`$request['ROUTE_ARGS']` array as well.
 
 
 ## Dependency Injection
@@ -197,8 +223,7 @@ alternative to the superglobal anti-pattern present by default in PHP web SAPI e
 
 `Request` instances implement `ArrayAccess` to provide mutability for middleware callables. In this
 way it's possible for middleware components to alter the request to perform actions such as URI
-rewriting. Note that applications *always* have access to the original request information parsed
-from superglobals at boot time.
+rewriting.
 
 **Request Provisioning**
 
@@ -317,7 +342,7 @@ file (.htaccess/httpd.conf/vhost.conf):
 FallbackResource /index.php
 ```
 
-If you have an older version of Apach you should instead add this block to your config file:
+If you have an older version of Apache you should instead add this block to your config file:
 
 ```
 <IfModule mod_rewrite.c>
