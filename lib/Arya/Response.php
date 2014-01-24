@@ -4,14 +4,14 @@ namespace Arya;
 
 class Response implements \ArrayAccess {
 
-    protected $status = 200;
-    protected $reasonPhrase = '';
-    protected $headers = array();
-    protected $ucHeaders = array();
-    protected $cookies = array();
-    protected $body;
-    protected $asgiMap = array();
-    protected $cookieOptions = array(
+    private $status = 200;
+    private $reasonPhrase = '';
+    private $headers = array();
+    private $ucHeaders = array();
+    private $cookies = array();
+    private $body;
+    private $asgiMap = array();
+    private $cookieOptions = array(
         'expire' => 0,
         'path' => '',
         'domain' => '',
@@ -19,18 +19,9 @@ class Response implements \ArrayAccess {
         'httponly' => FALSE
     );
 
-    public function __construct($body = NULL, $status = NULL, array $headers = array(), $reason = '') {
-        if (isset($body)) {
-            $this->setBody($body);
-        }
-        if (isset($status)) {
-            $this->setStatus($status);
-        }
-        if ($headers) {
-            $this->setAllHeaders($headers);
-        }
-        if ($reason !== '') {
-            $this->setReason($reason);
+    public function __construct(array $map = array()) {
+        foreach ($map as $key => $value) {
+            $this->offsetSet($key, $value);
         }
     }
 
@@ -128,7 +119,7 @@ class Response implements \ArrayAccess {
         return $this;
     }
 
-    protected function isValidArrayHeader(array $headerValues) {
+    private function isValidArrayHeader(array $headerValues) {
         foreach ($headerValues as $key => $value) {
             if (!is_scalar($value)) {
                 return FALSE;
@@ -138,7 +129,7 @@ class Response implements \ArrayAccess {
         return TRUE;
     }
 
-    protected function setCookieFromRawHeaderValue($rawCookieStr) {
+    private function setCookieFromRawHeaderValue($rawCookieStr) {
         if (!$rawCookieStr) {
             throw new \InvalidArgumentException(
                 'Invalid cookie string'
@@ -233,7 +224,7 @@ class Response implements \ArrayAccess {
         return $this;
     }
 
-    protected function splitHeaderLine($line) {
+    private function splitHeaderLine($line) {
         $fieldEndPosition = strpos($line, ':');
         if (!$fieldEndPosition) {
             throw new \DomainException(
@@ -368,7 +359,7 @@ class Response implements \ArrayAccess {
         return $this;
     }
 
-    protected function assignCookieHeader($name, $value, array $options) {
+    private function assignCookieHeader($name, $value, array $options) {
         $options = array_intersect_key($options, $this->cookieOptions);
         $options = array_merge($this->cookieOptions, $options);
         extract($options);
@@ -530,37 +521,6 @@ class Response implements \ArrayAccess {
      */
     public function hasBody() {
         return isset($this->body);
-    }
-
-    /**
-     * Assign ASGI response values from an array map
-     *
-     * Example:
-     *
-     *     ```php
-     *     <?php
-     *     $asgiMap = array(
-     *         'status' => 200,
-     *         'body' => 'Hello, world!',
-     *         'headers' => array(
-     *             'Content-Type: text/plain',
-     *             'My-Custom-Header: some value'
-     *         )
-     *     );
-     *     $response = new Arya\Response;
-     *     $response->populateFromAsgiMap($asgiMap);
-     *     ```
-     *
-     * @param array $asgiMap
-     * @throws \InvalidArgumentException
-     * @return Response Returns the current object instance
-     */
-    public function populateFromAsgiMap(array $asgiMap) {
-        foreach ($asgiMap as $key => $value) {
-            $this->offsetSet($offset, $value);
-        }
-
-        return $this;
     }
 
     public function offsetSet($offset, $value) {

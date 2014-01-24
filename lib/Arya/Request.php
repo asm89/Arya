@@ -69,6 +69,7 @@ class Request implements \ArrayAccess, \Iterator {
 
         if ($_input
             && $this->vars['REQUEST_METHOD'] !== 'POST'
+            && isset($this->vars['CONTENT_TYPE'])
             && stripos($this->vars['CONTENT_TYPE'], 'multpart/form-data') === 0
         ) {
             $this->parseMultipartFormData($_input);
@@ -79,13 +80,15 @@ class Request implements \ArrayAccess, \Iterator {
      * @TODO Parse non-POST-method multipart bodies into form/files arrays
      */
     private function parseMultipartFormData($_input) {}
-    
-    
-    
-    
-    
 
-
+    /**
+     * Did the request contain the specified header field?
+     *
+     * Header field names are NOT case-sensitive.
+     *
+     * @param string $field
+     * @return bool
+     */
     public function hasHeader($field) {
         return isset($this->headers[strtoupper($field)]);
     }

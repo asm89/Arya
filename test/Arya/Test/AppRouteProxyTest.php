@@ -8,9 +8,9 @@ class AppRouteProxyTest extends \PHPUnit_Framework_TestCase {
 
     public function testMagicCallDelegatesToApplication() {
         $app = $this->getMock('Arya\Application');
-        $app->expects($this->once())->method('execute');
+        $app->expects($this->once())->method('run');
         $arp = new AppRouteProxy($app, 'GET', '/some-uri');
-        $arp->execute();
+        $arp->run();
     }
 
     /**
