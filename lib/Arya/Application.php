@@ -440,7 +440,7 @@ class Application {
         header($statusLine);
 
         foreach ($response->getAllHeaderLines() as $headerLine) {
-            header($headerLine);
+            header($headerLine, $replace = FALSE);
         }
 
         $body = $response->getBody();

@@ -257,9 +257,10 @@ class Response implements \ArrayAccess {
      */
     public function addHeader($field, $value) {
         if ($this->hasHeader($field)) {
-            $existingHeaders = $this->getHeader($field);
-            $value = is_scalar($value) ? [$value] : $value;
-            $newHeaders = array_merge($existingHeaders, $value);
+            $existing = $this->getHeader($field);
+            $existing = is_array($existing) ? $existing : array($existing);
+            $value = is_scalar($value) ? array($value) : $value;
+            $newHeaders = array_merge($existing, $value);
             $this->setHeader($field, $newHeaders);
         } else {
             $this->setHeader($field, $value);

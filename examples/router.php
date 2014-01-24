@@ -97,6 +97,19 @@ function php_info() {
     return ob_get_clean();
 }
 
+
+function testComplexResponseFunctionTarget(Request $request) {
+    $response = new Response;
+
+    return $response->setStatus(234)
+        ->setReasonPhrase('Custom Reason')
+        ->setHeader('X-My-Header', '1')
+        ->addHeader('X-My-Header', '2')
+        ->setBody('zanzibar!')
+    ;
+}
+
+
 $app = (new Application)
     ->route('GET', '/', 'helloFunction')
     ->route('GET', '/lambda', $lambda)
@@ -108,5 +121,6 @@ $app = (new Application)
     ->route('GET', '/$#arg1/$#arg2', 'numericArgsFunction')
     ->route('GET', '/output', 'output')
     ->route('GET', '/session', 'session')
+    ->route('GET', '/complex', 'testComplexResponseFunctionTarget')
     ->run()
 ;
