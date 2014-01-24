@@ -1,9 +1,21 @@
 <?php
 
-require __DIR__ . '/../autoload.php';
-require __DIR__ . '/../vendor/Artax/autoload.php';
+error_reporting(E_ALL);
 
 date_default_timezone_set('UTC');
+
+spl_autoload_register(function($class) {
+    if (strpos($class, 'Arya\\') === 0) {
+        $class = str_replace('\\', '/', $class);
+        $file = __DIR__ . "/../lib/{$class}.php";
+        if (file_exists($file)) {
+            require $file;
+        }
+    }
+});
+
+require __DIR__ . '/../vendor/Auryn/autoload.php';
+require __DIR__ . '/../vendor/Artax/autoload.php';
 
 spl_autoload_register(function($class) {
     if (strpos($class, 'Arya\\Test\\') === 0) {

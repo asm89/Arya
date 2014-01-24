@@ -5,8 +5,6 @@ use Arya\Application,
     Arya\Response,
     Arya\Sessions\Session;
 
-require __DIR__ . '/../autoload.php';
-
 function testFunctionTarget() {
     return 'test';
 }
@@ -61,6 +59,38 @@ function testComplexResponseFunctionTarget(Request $request) {
     ;
 }
 
+function beforeAll($request) {
+    $request['BEFORE_ALL_TEST'] = 42;
+}
+
+function afterAll($request, $response) {
+    $response->addHeader('X-Before-Test', $request['BEFORE_ALL_TEST']);
+}
+
+function beforeSpecific($request) {
+    $request['BEFORE_ALL_SPECIFIC_TEST'] = 'test';
+}
+
+function afterSpecific($request, $response) {
+    $response->addHeader('X-Before-Specific-Test', $request['BEFORE_ALL_SPECIFIC_TEST']);
+}
+
+function afterWithUriFilter($response) {
+    $response->setHeader('X-Zanzibar', 'zanzibar!');
+}
+
+function fatalFunction() {
+    $obj->nonexistent();
+}
+
+function exceptionFunction() {
+    throw new \Exception('test');
+}
+
+
+
+
+
 $app = (new Application)
     ->route('GET', '/test-function-target', 'testFunctionTarget')
     ->route('GET', '/test-lambda-target', $lambda)
@@ -69,5 +99,14 @@ $app = (new Application)
     ->route('GET', '/$arg1/$arg2/$#arg3', 'testRouteArgsFunctionTarget')
     ->route('GET', '/generates-output', 'testGeneratesOutputFunctionTarget')
     ->route('GET', '/complex-response', 'testComplexResponseFunctionTarget')
+    ->route('GET', '/zanzibar/test', 'testFunctionTarget')
+    ->route('GET', '/fatal', 'fatalFunction')
+    ->route('GET', '/exception', 'exceptionFunction')
+    ->route('GET', '/test-route-specific-middleware', 'testFunctionTarget')
+        ->beforeRoute('beforeSpecific')
+        ->afterRoute('afterSpecific')
+    ->before('beforeAll')
+    ->after('afterAll')
+    ->after('afterWithUriFilter', $options = array('uri' => '/zanzibar/*'))
     ->run()
 ;

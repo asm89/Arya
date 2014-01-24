@@ -107,6 +107,45 @@ class IntegrationTest extends \PHPUnit_Framework_TestCase {
 
     }
 
+    public function testAppWideBeforeMiddleware() {
+        $uri = self::$baseUri . '/test-function-target';
+        $response = self::$client->request($uri);
+        $this->assertTrue($response->hasHeader('X-Before-Test'));
+        $this->assertEquals(42, current($response->getHeader('X-Before-Test')));
+    }
+
+    public function testRouteSpecificBeforeAndAfterMiddleware() {
+        $uri = self::$baseUri . '/test-route-specific-middleware';
+        $response = self::$client->request($uri);
+        $this->assertTrue($response->hasHeader('X-Before-Specific-Test'));
+        $this->assertEquals('test', current($response->getHeader('X-Before-Specific-Test')));
+    }
+
+    public function testAfterMiddlewareWithUriFilter() {
+        // Matches /zanzibar/* URI filter
+        $uri = self::$baseUri . '/zanzibar/test';
+        $response = self::$client->request($uri);
+        $this->assertTrue($response->hasHeader('X-Zanzibar'));
+        $this->assertEquals('zanzibar!', current($response->getHeader('X-Zanzibar')));
+
+        // URI doesn't match /zanzibar/* filter
+        $uri = self::$baseUri . '/test-function-target';
+        $response = self::$client->request($uri);
+        $this->assertFalse($response->hasHeader('X-Zanzibar'));
+    }
+    
+    public function testFatalRouteTarget() {
+        $uri = self::$baseUri . '/fatal';
+        $response = self::$client->request($uri);
+        $this->assertEquals(500, $response->getStatus());
+    }
+    
+    public function testExceptionRouteTarget() {
+        $uri = self::$baseUri . '/fatal';
+        $response = self::$client->request($uri);
+        $this->assertEquals(500, $response->getStatus());
+    }
+
 
 }
 

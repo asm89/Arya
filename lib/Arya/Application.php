@@ -55,9 +55,6 @@ class Application {
         $this->router = $router ?: new CompositeRegexRouter;
 
         $self = $this;
-        register_shutdown_function(function() use ($self) { $self->shutdownHandler(); });
-        set_exception_handler(function($e) use ($self) { $self->exceptionHandler($e); });
-        ob_start();
     }
 
     /**
@@ -174,6 +171,8 @@ class Application {
         $input = !empty($_SERVER['CONTENT-LENGTH']) ? fopen('php://input', 'r') : NULL;
         $request = new Request($_SERVER, $_GET, $_POST, $_FILES, $_COOKIE, $input);
 
+        unset($_SERVER, $_GET, $_POST, $_FILES, $_COOKIE);
+
         return $request;
     }
 
@@ -235,6 +234,20 @@ class Application {
         return $result;
     }
 
+    private function matchesUriFilter($uriFilter, $uriPath) {
+        if ($uriFilter === $uriPath) {
+            $isMatch = TRUE;
+        } elseif ($uriFilter[strlen($uriFilter) - 1] === '*'
+            && strpos($uriPath, substr($uriFilter, 0, -1)) === 0
+        ) {
+            $isMatch = TRUE;
+        } else {
+            $isMatch = FALSE;
+        }
+
+        return $isMatch;
+    }
+
     private function tryBefore($middleware, Request $request) {
         try {
             $result = $this->injector->execute($middleware, array(
@@ -255,20 +268,6 @@ class Application {
         }
 
         return $result;
-    }
-
-    private function matchesUriFilter($uriFilter, $uriPath) {
-        if ($uriFilter === $uriPath) {
-            $isMatch = TRUE;
-        } elseif ($uriFilter[strlen($uriFilter) - 1] === '*'
-            && strpos($uriPath, substr($uriFilter, 0, -1)) === 0
-        ) {
-            $isMatch = TRUE;
-        } else {
-            $isMatch = FALSE;
-        }
-
-        return $isMatch;
     }
 
     private function generateExceptionResponse(\Exception $e) {
@@ -464,32 +463,6 @@ class Application {
         return $statusLine;
     }
 
-    private function tryErrorModification($modifier, Request $request, Response $response) {
-        try {
-            $executable = $this->injector->getExecutable($modifier);
-            $result = $executable($request, $response);
-            if ($result instanceof Response) {
-                $response = $result;
-            } else {
-                $response->setBody($result);
-            }
-        } catch (InjectionException $e) {
-            $response = $this->generateExceptionResponse(new \RuntimeException(
-                $msg = 'Error modifier injection failure',
-                $code = 0,
-                $prev = $e
-            ));
-        } catch (\Exception $e) {
-            $response = $this->generateExceptionResponse(new \RuntimeException(
-                $msg = 'Error modifier execution threw an uncaught exception',
-                $code = 0,
-                $prev = $e
-            ));
-        }
-
-        return $response;
-    }
-
     private function outputCallableBody(callable $body) {
         try {
             $body();
@@ -505,8 +478,6 @@ class Application {
             header("HTTP/{$protocol} 500 Internal Server Error");
             echo $this->generateExceptionBody($e);
         }
-
-        throw new TerminationException;
     }
 
     private function shutdownHandler() {
@@ -530,14 +501,6 @@ class Application {
             $this->injector->execute($middleware, []);
         } catch (\Exception $e) {
             error_log($e->__toString());
-        }
-    }
-
-    private function exceptionHandler(\Exception $e) {
-        if ($e instanceof TerminationException) {
-            exit;
-        } else {
-            throw $e;
         }
     }
 

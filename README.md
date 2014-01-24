@@ -1,40 +1,24 @@
-> **WARNING:** Arya is still under development and there is very little unit-testing present at
-> the moment. Use at your own risk.
-
 # Arya
 
 Arya is a minimalist PHP web SAPI framework providing URI routing, dependency injection and
 middleware hooks. The framework leverages HTTP protocol adherence and S.O.L.I.D design principles to
-maximize flexibility while maintaining the simplicity of PHP's static request model.
+maximize flexibility while maintaining the simplicity and performance.
 
-**IO as Design Philosophy**
-
-An ideal web application architecture is little more than a callable receiving input (the request)
-and returning output (the response). Arya allows the specification of any valid callable or instance
-method as a URI route target. The framework acts as a simple front controller providing routing,
-lazy-loading and automated dependency injection to service individual HTTP requests.
-
-> The PHP web SAPI *is* a web application framework in its own right. Layering unnecessary components
-> on top serves no purpose but vendor lock-in and performance degradation. Arya provides a baseline
-> architecture for testable, performant applications with low coupling and high cohesion; the rest
-> is up to you.
+> **WARNING:** Arya is still under development and there is very little unit-testing present at
+> the moment. Use at your own risk.
 
 **Project Goals**
 
-- Model all code as closely as possible on the HTTP/1.1 protocol outlined in RFC 2616;
-- Build all components using S.O.L.I.D., readable and thoroughly unit-tested code;
-- Prevent vendor lock-in by eschewing design decisions that tightly couple application callables
-  to the framework;
-- Minimize processing overhead because good architecture should not be synonymous with excessive
-  performance degradation.
+- Model code as closely as possible on the HTTP/1.1 protocol as outlined in RFC 2616;
+- Build components using SOLID, readable and tested code;
+- Prevent vendor lock-in and static coupling;
+- Minimize performance overhead.
 
-## Requirements
+## Requirements and Installation
 
 - PHP >= 5.3
-- [Auryn](https://github.com/rdlowrey/Auryn) (Dependency Injection)
-- [Artax](https://github.com/rdlowrey/Artax) (Only needed to run the full test suite [requires PHP 5.4+])
-
-## Installation
+- [Auryn](https://github.com/rdlowrey/Auryn) For automated dependency injection
+- [Artax](https://github.com/rdlowrey/Artax) Only needed to run tests
 
 **Github**
 
@@ -195,7 +179,7 @@ use Arya\Application;
 function lolcatsFunction($request, $catType, $catId) {
     assert($catType === $request['ROUTE_ARGS']['catType']);
     assert($catId === $request['ROUTE_ARGS']['catId']);
-    
+
     return '<html><body>woot!</body></html>';
 }
 
@@ -325,8 +309,6 @@ In these cases route targets may return an instance of the `Arya\Response` class
 ### Debug Mode
 @TODO
 
-### Custom Error Handlers
-@TODO
 
 ## Server Setup
 

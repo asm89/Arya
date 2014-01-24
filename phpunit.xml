@@ -20,7 +20,7 @@
     <php>
         <const name="WEB_SERVER_HOST" value="localhost" />
         <const name="WEB_SERVER_PORT" value="9500" />
-        <const name="WEB_SERVER_ROUTER" value="./test/integration_router.php" />
+        <const name="WEB_SERVER_ROUTER" value="./test/integration_front_controller.php" />
         <!--<const name="WEB_SERVER_DOCROOT" value="./public" />-->
     </php>
 

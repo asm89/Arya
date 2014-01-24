@@ -5,8 +5,6 @@ use Arya\Application,
     Arya\Response,
     Arya\Sessions\Session;
 
-require __DIR__ . '/../autoload.php';
-
 function helloFunction(Request $request) {
     return '<html><body><h1>Hello, World.</h1></body></html>';
 }
@@ -97,6 +95,13 @@ function php_info() {
     return ob_get_clean();
 }
 
+function fatalFunction() {
+    $obj->nonexistent();
+}
+
+function exceptionFunction() {
+    throw new \Exception('test');
+}
 
 function testComplexResponseFunctionTarget(Request $request) {
     $response = new Response;
@@ -109,18 +114,24 @@ function testComplexResponseFunctionTarget(Request $request) {
     ;
 }
 
+function printVars($request) {
+    return "<pre>" . print_r($request->all(), TRUE)  . "</pre>";
+}
 
-$app = (new Application)
-    ->route('GET', '/', 'helloFunction')
+$app = new Application;
+$app->route('GET', '/', 'helloFunction')
     ->route('GET', '/lambda', $lambda)
     ->route('GET', '/static-method', 'StaticExampleClass::staticMethod')
     ->route('GET', '/ctor-deps', 'CtorDependencies::myInstanceMethod')
     ->route('GET', '/complex-response', 'complexResponse')
     ->route('GET', '/phpinfo', 'php_info')
-    ->route('GET', '/$arg1', 'argFunction')
-    ->route('GET', '/$#arg1/$#arg2', 'numericArgsFunction')
+    ->route('GET', '/args/$arg1', 'argFunction')
+    ->route('GET', '/args/$#arg1/$#arg2', 'numericArgsFunction')
     ->route('GET', '/output', 'output')
     ->route('GET', '/session', 'session')
     ->route('GET', '/complex', 'testComplexResponseFunctionTarget')
+    ->route('GET', '/print-vars', 'printVars')
+    ->route('GET', '/fatal', 'fatalFunction')
+    ->route('GET', '/exception', 'exceptionFunction')
     ->run()
 ;
