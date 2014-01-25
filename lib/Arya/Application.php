@@ -158,11 +158,10 @@ class Application {
 
         $this->response = $this->doAfters($request, $response);
 
-        $bufferedOutput = ob_get_contents();
+        $bufferedOutput = ob_get_clean();
         if (isset($bufferedOutput[0])) {
             $this->response = $this->generateOutputErrorResponse($bufferedOutput);
         }
-        ob_end_clean();
 
         $this->sendResponse($this->response);
     }
