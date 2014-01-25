@@ -13,7 +13,9 @@
   ],
   "require": {
     "php": ">=5.4.0",
-    "rdlowrey/auryn": "~0.12.0",
+    "rdlowrey/auryn": "~0.12.0"
+  },
+  "require-dev": {
     "rdlowrey/artax": "~0.6.2"
   },
   "autoload": {
