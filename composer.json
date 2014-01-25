@@ -1,5 +1,5 @@
 {
-  "name": "rdlowrey/amp",
+  "name": "rdlowrey/arya",
   "homepage": "https://github.com/rdlowrey/Arya",
   "description": "A microframework for PHP 5.3+",
   "keywords": ["microframework", "routing", "dependency-injection"],
@@ -13,8 +13,8 @@
   ],
   "require": {
     "php": ">=5.4.0",
-    "rdlowrey/auryn: "~0.12.0"
-    "rdlowrey/artax: "~0.6.2"
+    "rdlowrey/auryn": "~0.12.0",
+    "rdlowrey/artax": "~0.6.2"
   },
   "autoload": {
     "psr-0": {
