@@ -4,28 +4,33 @@ error_reporting(E_ALL);
 
 date_default_timezone_set('UTC');
 
-spl_autoload_register(function($class) {
-    if (strpos($class, 'Arya\\') === 0) {
-        $class = str_replace('\\', '/', $class);
-        $file = __DIR__ . "/../lib/{$class}.php";
-        if (file_exists($file)) {
-            require $file;
+if (file_exists(__DIR__  . '/../vendor/autoload.php')) {
+    $loader = require_once __DIR__ . '/../vendor/autoload.php';
+    $loader->add('Arya\\Test\\', __DIR__);
+} else {
+    spl_autoload_register(function($class) {
+        if (strpos($class, 'Arya\\') === 0) {
+            $class = str_replace('\\', '/', $class);
+            $file = __DIR__ . "/../lib/{$class}.php";
+            if (file_exists($file)) {
+                require $file;
+            }
         }
-    }
-});
+    });
 
-require __DIR__ . '/../vendor/Auryn/autoload.php';
-require __DIR__ . '/../vendor/Artax/autoload.php';
+    require __DIR__ . '/../vendor/Auryn/autoload.php';
+    require __DIR__ . '/../vendor/Artax/autoload.php';
 
-spl_autoload_register(function($class) {
-    if (strpos($class, 'Arya\\Test\\') === 0) {
-        $class = str_replace('\\', DIRECTORY_SEPARATOR, $class);
-        $file = __DIR__ . "/test/{$class}.php";
-        if (file_exists($file)) {
-            require $file;
+    spl_autoload_register(function($class) {
+        if (strpos($class, 'Arya\\Test\\') === 0) {
+            $class = str_replace('\\', DIRECTORY_SEPARATOR, $class);
+            $file = __DIR__ . "/test/{$class}.php";
+            if (file_exists($file)) {
+                require $file;
+            }
         }
-    }
-});
+    });
+}
 
 $serverCommand = sprintf(
     '%s -S %s:%d %s >/dev/null 2>&1 & echo $!',

@@ -45,17 +45,21 @@ register_shutdown_function(function() use ($__debug) {
     }
 });
 
-spl_autoload_register(function($class) {
-    if (0 === strpos($class, 'Arya\\')) {
-        $class = str_replace('\\', '/', $class);
-        $file = __DIR__ . "/lib/{$class}.php";
-        if (file_exists($file)) {
-            require $file;
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+} else {
+    spl_autoload_register(function($class) {
+        if (0 === strpos($class, 'Arya\\')) {
+            $class = str_replace('\\', '/', $class);
+            $file = __DIR__ . "/lib/{$class}.php";
+            if (file_exists($file)) {
+                require $file;
+            }
         }
-    }
-});
-
-require __DIR__ . '/vendor/Auryn/autoload.php';
+    });
+    
+    require __DIR__ . '/vendor/Auryn/autoload.php';
+}
 
 if (isset($__application)) {
     require $__application;
